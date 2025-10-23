@@ -4,6 +4,7 @@
 node_modules
 .pnp
 .pnp.js
+posthog.env
 
 # Yarn 2+
 .yarn/*
@@ -16,6 +17,7 @@ node_modules
 
 # Local env files
 .env
+docker.env
 .env.local
 .env.development.local
 .env.test.local
