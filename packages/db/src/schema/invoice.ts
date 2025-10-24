@@ -2,7 +2,6 @@ import { PdfTemplateName } from "@/app/(dashboard)/create/invoice/invoiceHelpers
 import { pgTable, text, timestamp, uuid, pgEnum, jsonb, integer } from "drizzle-orm/pg-core";
 import { Numeric } from "../custom/decimal";
 import { relations } from "drizzle-orm";
-import { users } from "./user";
 
 interface InvoiceTheme {
   baseColor: string;
@@ -12,25 +11,19 @@ interface InvoiceTheme {
 
 // Enums
 export const invoiceStatusEnum = pgEnum("invoice_status", ["pending", "success", "error", "expired", "refunded"]);
-export const invoiceTypeEnum = pgEnum("invoice_type", ["local", "server"]);
 export const invoiceValueTypesEnum = pgEnum("invoice_value_types", ["fixed", "percentage"]);
 
 // export enum types
 export type InvoiceStatusType = (typeof invoiceStatusEnum.enumValues)[number];
-export type InvoiceTypeType = (typeof invoiceTypeEnum.enumValues)[number];
 export type InvoiceValueTypesType = (typeof invoiceValueTypesEnum.enumValues)[number];
 
 // Tables
 export const invoices = pgTable("invoices", {
   id: uuid("id").primaryKey().defaultRandom(),
-  type: invoiceTypeEnum("type").notNull().default("server"),
   status: invoiceStatusEnum("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   paidAt: timestamp("paid_at"),
-  userId: uuid("user_id")
-    .references(() => users.id, { onDelete: "cascade" })
-    .notNull(),
 });
 
 export const invoiceFields = pgTable("invoice_fields", {

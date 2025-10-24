@@ -1,8 +1,8 @@
 import { InternalServerError, NotFoundError } from "@/lib/effect/error/trpc";
-import { authorizedProcedure } from "@/trpc/procedures/authorizedProcedure";
 import { getInvoiceQuery } from "@/lib/db-queries/invoice/getInvoice";
 import { parseCatchError } from "@/lib/neverthrow/parseCatchError";
 import { ERROR_MESSAGES } from "@/constants/issues";
+import { baseProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { Effect } from "effect";
 import { z } from "zod";
@@ -11,12 +11,12 @@ const getInvoiceSchema = z.object({
   id: z.string(),
 });
 
-export const getInvoice = authorizedProcedure.input(getInvoiceSchema).query(async ({ input, ctx }) => {
+export const getInvoice = baseProcedure.input(getInvoiceSchema).query(async ({ input }) => {
   // Get Invoice Effect
   const getInvoiceEffect = Effect.gen(function* () {
     // Get the invoice
     const invoice = yield* Effect.tryPromise({
-      try: () => getInvoiceQuery(input.id, ctx.auth.user.id),
+      try: () => getInvoiceQuery(input.id),
       catch: (error) => new InternalServerError({ message: parseCatchError(error) }),
     });
 

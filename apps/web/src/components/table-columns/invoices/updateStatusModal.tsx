@@ -21,8 +21,6 @@ import {
   HourglassStartIcon,
   PriorityMediumIcon,
 } from "@/assets/icons";
-import { updateInvoiceStatus } from "@/lib/indexdb-queries/updateInvoiceStatus";
-import type { InvoiceTypeType } from "@invoicely/db/schema/invoice";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { parseCatchError } from "@/lib/neverthrow/parseCatchError";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -42,7 +40,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 interface UpdateStatusModalProps {
-  type: InvoiceTypeType;
   invoiceId: string;
   currentStatus: string;
 }
@@ -54,7 +51,7 @@ const invoiceStatusSchema = z.object({
 
 type InvoiceStatusSchema = z.infer<typeof invoiceStatusSchema>;
 
-const UpdateStatusModal = ({ invoiceId, type, currentStatus }: UpdateStatusModalProps) => {
+const UpdateStatusModal = ({ invoiceId, currentStatus }: UpdateStatusModalProps) => {
   const [open, setOpen] = useState(false);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -76,24 +73,6 @@ const UpdateStatusModal = ({ invoiceId, type, currentStatus }: UpdateStatusModal
     }),
   );
 
-  // IDB Mutation
-  const updateIDBInvoiceStatusMutation = useMutation({
-    mutationFn: async (data: InvoiceStatusSchema) => {
-      await updateInvoiceStatus(data.id, data.status);
-    },
-    onSuccess: () => {
-      toast.success("Status updated successfully!", {
-        description: "The status of the invoice has been updated successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["idb-invoices"] });
-    },
-    onError: (error) => {
-      toast.error("Failed to update status!", {
-        description: parseCatchError(error),
-      });
-    },
-  });
-
   const form = useForm<InvoiceStatusSchema>({
     resolver: zodResolver(invoiceStatusSchema),
     defaultValues: {
@@ -103,20 +82,10 @@ const UpdateStatusModal = ({ invoiceId, type, currentStatus }: UpdateStatusModal
   });
 
   const onSubmit = async (data: InvoiceStatusSchema) => {
-    if (type === "server") {
-      // Updating the status of the invoice in the database
-      await updateServerInvoiceStatusMutation.mutateAsync({
-        id: invoiceId,
-        status: data.status,
-      });
-    } else {
-      // Updating status of invoice in local idb
-      await updateIDBInvoiceStatusMutation.mutateAsync({
-        id: invoiceId,
-        status: data.status,
-      });
-    }
-
+    await updateServerInvoiceStatusMutation.mutateAsync({
+      id: invoiceId,
+      status: data.status,
+    });
     // Close the modal
     setOpen(false);
   };

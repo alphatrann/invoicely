@@ -2,47 +2,49 @@
   <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
 </a>
 
-# Invoicely - (Contributions Accepted)
-
-Modern, open-source invoice generation platform built with Next.js, tRPC, and TypeScript.
+# Invoicely
 
 > [!CAUTION]
-> We do not allow vibe coding. Your PR will be rejected if the code quality is poor and vibe coded.
+> This project has been greatly simplifed from the original repository for local use. Authentication is omitted, databases and file storage run locally in Docker containers.
+> The original repository is available [here](https://github.com/legions-developer/invoicely).
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
+#### Development
 - **Node.js**: Version 20 or higher
 - **Yarn**: Version 4.9.1 or higher (automatically managed via `packageManager` field)
 - **PostgreSQL**: Database for storing application data
+
+#### Production
+
+* **Docker**: version 27.3.1 or higher
 
 ### Installation
 
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/legions-developer/invoicely.git
+   git clone https://github.com/alphatrann/invoicely.git
    cd invoicely
    ```
 
-2. **Install dependencies**
+#### Development
+1. **Install dependencies**
 
    ```bash
    yarn install
    ```
 
-3. **Set up environment variables**
+2. **Set up environment variables**
 
    ```bash
-   # Create environment file in root directory
-   cp .env.example .env
-
    # Create symlinks for environment variables across apps
    yarn sys-link
    ```
 
-4. **Set up the database**
+3. **Set up the database**
 
    ```bash
    # Generate database schema
@@ -52,10 +54,18 @@ Modern, open-source invoice generation platform built with Next.js, tRPC, and Ty
    yarn db:migrate
    ```
 
-5. **Start development server**
+4. **Start development server**
    ```bash
    yarn dev
    ```
+
+#### Production
+Simply run:
+```bash
+docker compose up -d
+```
+
+This will automatically build images and spin up containers: storage (MinIO), database (Postgres), frontend and reverse proxy (Caddy)
 
 ## 🛠️ Tech Stack
 
@@ -81,12 +91,10 @@ Modern, open-source invoice generation platform built with Next.js, tRPC, and Ty
 - **Motion 12.10.5** - Animation library
 - **Next Themes** - Theme management
 
-### Database & Authentication
+### Database
 
 - **Drizzle ORM 0.43.1** - Type-safe database ORM
-- **Neon Database** - Serverless PostgreSQL
-- **Better Auth 1.2.8** - Modern authentication library
-- **Google OAuth** - Social authentication
+- **PostgreSQL**
 
 ### File Storage & PDF
 
@@ -102,8 +110,6 @@ Modern, open-source invoice generation platform built with Next.js, tRPC, and Ty
 
 ### Analytics & Monitoring
 
-- **PostHog** - Product analytics
-- **OpenPanel** - Privacy-focused analytics
 - **React Scan** - Performance debugging
 
 ### Utilities
@@ -116,41 +122,42 @@ Modern, open-source invoice generation platform built with Next.js, tRPC, and Ty
 ## 📁 Project Structure
 
 ```
-invoicely/
-├── apps/
-│   └── web/                    # Next.js web application
-│       ├── src/
-│       │   ├── app/           # App Router pages
-│       │   ├── components/    # Reusable UI components
-│       │   ├── constants/     # Application constants
-│       │   ├── hooks/         # Custom React hooks
-│       │   ├── lib/          # Utility libraries
-│       │   ├── providers/    # Context providers
-│       │   ├── trpc/         # tRPC configuration
-│       │   ├── types/        # TypeScript type definitions
-│       │   └── zod-schemas/  # Zod validation schemas
-│       ├── public/           # Static assets
-│       └── package.json      # App dependencies
-│
-├── packages/
-│   ├── db/                   # Database package
-│   │   ├── src/
-│   │   │   ├── schema/      # Drizzle database schemas
-│   │   │   └── index.ts     # Database exports
-│   │   └── migrations/      # Database migration files
-│   │
-│   ├── utilities/           # Shared utilities
-│   │   └── src/
-│   │       └── env/        # Environment configuration
-│   │
-│   ├── eslint-config/      # Shared ESLint configuration
-│   └── typescript-config/  # Shared TypeScript configuration
-│
-├── env-links.sh            # Environment symlink script
-├── turbo.json             # Turbo configuration
-├── package.json           # Root package configuration
-└── yarn.lock             # Dependency lock file
+invoicely
+│ .dockerignore
+│ .env
+│ .prettierrc
+│ .yarnrc.yml
+│ Caddyfile
+│ compose.yml
+│ Dockerfile
+│ drizzle.config.ts
+│ env-links.sh
+│ LICENSE
+│ package.json
+│ README.md
+│ turbo.json
+│ yarn.lock
+├───apps
+│   └──web
+│      ├──public
+│      └──src
+│         ├──app
+│         ├──assets
+│         ├──components
+│         ├──constants
+│         ├──global
+│         ├──hooks
+│         ├──lib
+│         ├──trpc
+│         ├──types
+│         └──zod-schemas
+└──packages
+   ├──db
+   ├──eslint-config
+   ├──typescript-config
+   └──utilities
 ```
+
 
 ## 🔧 Environment Variables
 
@@ -158,28 +165,23 @@ Create a `.env` file in the root directory with the following variables:
 
 ```bash
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/invoicely"
+POSTGRES_USER=root
+POSTGRES_PASSWORD=password
+POSTGRES_DB=invoicely
 
-# Authentication
-BETTER_AUTH_SECRET="your-secret-key"
-BETTER_AUTH_URL="http://localhost:3000"
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-
-# Cloudflare R2 Storage
-CF_R2_ENDPOINT="your-r2-endpoint"
-CF_R2_ACCESS_KEY_ID="your-access-key"
-CF_R2_SECRET_ACCESS_KEY="your-secret-key"
-CF_R2_BUCKET_NAME="your-bucket-name"
-CF_R2_PUBLIC_DOMAIN="your-public-domain"
-
-# Analytics
-NEXT_PUBLIC_POSTHOG_HOST="your-posthog-host"
-NEXT_PUBLIC_POSTHOG_KEY="your-posthog-key"
+DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
 
 # Public URLs
-NEXT_PUBLIC_BASE_URL="http://localhost:3000"
-NEXT_PUBLIC_TRPC_BASE_URL="http://localhost:3000/api/trpc"
+NEXT_PUBLIC_BASE_URL="http://localhost"
+NEXT_PUBLIC_TRPC_BASE_URL="http://localhost/api/trpc"
+
+MINIO_ROOT_USER=minio
+MINIO_ROOT_PASSWORD=minio123
+MINIO_BUCKET_NAME="invoicely"
+NEXT_PUBLIC_MINIO_PUBLIC_DOMAIN="http://localhost:9000/invoicely"
+MINIO_ENDPOINT="http://minio:9000"
+MINIO_ACCESS_KEY_ID="${MINIO_ROOT_USER}"
+MINIO_SECRET_ACCESS_KEY="${MINIO_ROOT_PASSWORD}"
 ```
 
 ### Environment Management
@@ -252,44 +254,6 @@ yarn lint             # Lint the web app
 - Use functional and declarative programming patterns
 - Structure files: exported component, subcomponents, helpers, static content, types
 
-## 🤝 Contributing
-
-We welcome contributions to Invoicely! Please follow these guidelines:
-
-### Branch Naming Convention
-
-- Format: `profilename/featurename`
-- Examples: `john/add-dark-mode`, `sarah/fix-invoice-validation`
-
-### Pull Request Guidelines
-
-- **PR Title Format**: `type: description`
-  - `feature: add invoice templates`
-  - `fix: resolve authentication redirect issue`
-  - `chore: update dependencies`
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch following the naming convention
-3. Make your changes following the code style guidelines
-4. Test your changes thoroughly
-5. Submit a pull request with a descriptive title and description
-
-### Important Notes
-
-- **Do NOT push database migrations** - Migrations should be reviewed and managed by maintainers
-- Ensure all tests pass before submitting
-- Follow the existing code style and conventions
-- Update documentation for any new features
-
-### Code Review Process
-
-- All PRs require review from at least one maintainer
-- Ensure your code follows TypeScript best practices
-- Write meaningful commit messages
-- Keep PRs focused and atomic
-
 ## 📚 Libraries and Documentation
 
 ### Core Documentation
@@ -308,8 +272,7 @@ We welcome contributions to Invoicely! Please follow these guidelines:
 ### Database & Authentication
 
 - [Drizzle ORM Documentation](https://orm.drizzle.team)
-- [Better Auth Documentation](https://www.better-auth.com)
-- [Neon Database Documentation](https://neon.tech/docs)
+- [PostgreSQL Documentation](https://postgresql.org/docs)
 
 ### UI & Styling
 
@@ -327,15 +290,3 @@ We welcome contributions to Invoicely! Please follow these guidelines:
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
- <a href="https://www.star-history.com/#legions-developer/invoicely&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=legions-developer/invoicely&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=legions-developer/invoicely&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=legions-developer/invoicely&type=Date" />
- </picture>
-</a>
-</div>

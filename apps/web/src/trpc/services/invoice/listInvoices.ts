@@ -1,16 +1,16 @@
-import { authorizedProcedure } from "@/trpc/procedures/authorizedProcedure";
 import { listInvoicesQuery } from "@/lib/db-queries/invoice/listInvoices";
 import { parseCatchError } from "@/lib/neverthrow/parseCatchError";
 import { InternalServerError } from "@/lib/effect/error/trpc";
+import { baseProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { Effect } from "effect";
 
-export const listInvoices = authorizedProcedure.query(async ({ ctx }) => {
+export const listInvoices = baseProcedure.query(async () => {
   // List Invoices Effect
   const listInvoicesEffect = Effect.gen(function* () {
     // Fetch invoices from the database
     const invoices = yield* Effect.tryPromise({
-      try: () => listInvoicesQuery(ctx.auth.user.id),
+      try: () => listInvoicesQuery(),
       catch: (error) => new InternalServerError({ message: parseCatchError(error) }),
     });
 

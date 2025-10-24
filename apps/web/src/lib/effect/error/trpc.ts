@@ -23,7 +23,7 @@ export class NotOwnerError extends Data.TaggedError("NotOwnerError")<{
  * Used to handle and report failures in storage operations, such as file uploads or deletions.
  * @requires message - The error message to be displayed to the user.
  */
-export class R2StorageError extends Data.TaggedError("R2StorageError")<{
+export class MinIOStorageError extends Data.TaggedError("MinIOStorageError")<{
   message: string;
 }> {}
 

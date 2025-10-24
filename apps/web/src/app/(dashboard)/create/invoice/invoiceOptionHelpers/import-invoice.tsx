@@ -15,53 +15,29 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { importInvoiceColumnConfig, importInvoiceColumns } from "@/components/table-columns/invoices";
-import { getAllInvoices } from "@/lib/indexdb-queries/invoice";
 import { DataTable } from "@/components/ui/data-table";
 import { InboxArrowDownIcon } from "@/assets/icons";
 import { Invoice } from "@/types/common/invoice";
 import { useQuery } from "@tanstack/react-query";
-import { useSession } from "@/lib/client-auth";
 import { useTRPC } from "@/trpc/client";
 
 const ImportInvoice = ({ form }: { form: UseFormReturn<ZodCreateInvoiceSchema> }) => {
   const [open, setOpen] = React.useState(false);
 
   const trpc = useTRPC();
-  const { data: session } = useSession();
 
   // Fetching Invoices from the Postgres (Server)
   const trpcData = useQuery({
     ...trpc.invoice.list.queryOptions(),
-    enabled: !!session?.user, // Only fetch if user is logged in
+    enabled: false, // Only fetch if user is logged in
   });
 
-  // Fetching Invoices from the LocalDB
-  const idbData = useQuery({
-    queryKey: ["idb-invoices"],
-    queryFn: getAllInvoices,
-  });
-
-  const isLoading = trpcData.isLoading || idbData.isLoading;
+  const isLoading = trpcData.isLoading;
 
   // Combine and ensure data is an array
-  const data = [...(trpcData.data ?? []), ...(idbData.data ?? [])];
+  const data = trpcData.data ?? [];
 
   const handleRowClick = (invoice: Invoice) => {
-    if (invoice.type === "local") {
-      // we need to convert image url and sig url to local base64
-      const invoiceFields = invoice.invoiceFields;
-      const imageBase64 = invoiceFields.companyDetails.logoBase64;
-      const sigBase64 = invoiceFields.companyDetails.signatureBase64;
-
-      if (!invoiceFields.companyDetails.logo?.startsWith("https://")) {
-        invoiceFields.companyDetails.logo = imageBase64;
-      }
-      if (!invoiceFields.companyDetails.signature?.startsWith("https://")) {
-        invoiceFields.companyDetails.signature = sigBase64;
-      }
-    }
-
-    // Reset form field to imported invoice
     form.reset(invoice.invoiceFields);
     setOpen(false);
   };

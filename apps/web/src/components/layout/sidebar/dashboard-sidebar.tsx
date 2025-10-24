@@ -5,15 +5,12 @@ import * as React from "react";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { NavigationUser } from "@/components/layout/sidebar/navigation-user";
 import { NavigationItem } from "@/components/layout/sidebar/navigation-item";
-import OpenSourceBadge from "@/components/ui/open-source-badge";
 import LogoIcon from "@/components/assets/logo-icon";
 import { SIDEBAR_ITEMS } from "@/constants/sidebar";
 
@@ -37,10 +34,6 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
           <NavigationItem key={key} title={key} items={SIDEBAR_ITEMS[key]} />
         ))}
       </SidebarContent>
-      <SidebarFooter>
-        <OpenSourceBadge />
-        <NavigationUser />
-      </SidebarFooter>
     </Sidebar>
   );
 }

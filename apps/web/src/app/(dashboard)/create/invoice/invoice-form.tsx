@@ -10,7 +10,6 @@ import { InvoiceTemplateSelector } from "./invoiceHelpers/invoice-templates";
 import { FormColorPicker } from "@/components/ui/form/form-color-picker";
 import InvoiceItemsSection from "./invoiceHelpers/invoice-items-section";
 import { FormDatePicker } from "@/components/ui/form/form-date-picker";
-import { getAllImages } from "@/lib/indexdb-queries/getAllImages";
 import { FormTextarea } from "@/components/ui/form/form-textarea";
 import { FormSelect } from "@/components/ui/form/form-select";
 import { currenciesWithSymbols } from "@/constants/currency";
@@ -21,7 +20,6 @@ import { useResizeObserver } from "@mantine/hooks";
 import { Form } from "@/components/ui/form/form";
 import { useQuery } from "@tanstack/react-query";
 import { UseFormReturn } from "react-hook-form";
-import { useSession } from "@/lib/client-auth";
 import { Badge } from "@/components/ui/badge";
 import { useTRPC } from "@/trpc/client";
 import { cn } from "@/lib/utils";
@@ -35,17 +33,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ form }) => {
   const trpc = useTRPC();
   const [resizeRef, container] = useResizeObserver();
 
-  const { data: session } = useSession();
-
-  // fetching images from indexedDB
-  const idbImages = useQuery({
-    queryKey: ["idb-images"],
-    queryFn: () => getAllImages(),
-  });
   // Fetching Server Images
   const serverImages = useQuery({
     ...trpc.cloudflare.listImages.queryOptions(),
-    enabled: !!session?.user,
+    enabled: true,
   });
 
   return (
@@ -66,10 +57,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ form }) => {
                 <div className={cn(container.width > 1200 ? "w-fit" : "w-full [&>*]:w-full", "flex flex-row gap-4")}>
                   <InvoiceImageSelectorSheet
                     type="logo"
-                    isLoading={idbImages.isLoading || serverImages.isLoading}
-                    idbImages={idbImages.data || []}
+                    isLoading={serverImages.isLoading}
                     serverImages={serverImages.data?.images || []}
-                    user={session?.user}
                     onUrlChange={(url) => {
                       form.setValue("companyDetails.logo", url);
                     }}
@@ -89,10 +78,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ form }) => {
                   </InvoiceImageSelectorSheet>
                   <InvoiceImageSelectorSheet
                     type="signature"
-                    isLoading={idbImages.isLoading || serverImages.isLoading}
-                    idbImages={idbImages.data || []}
+                    isLoading={serverImages.isLoading}
                     serverImages={serverImages.data?.images || []}
-                    user={session?.user}
                     onUrlChange={(url) => {
                       form.setValue("companyDetails.signature", url);
                     }}

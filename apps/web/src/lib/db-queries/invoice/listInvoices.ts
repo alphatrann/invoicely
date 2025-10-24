@@ -1,14 +1,12 @@
-import { db, schema } from "@invoicely/db";
-import { eq } from "drizzle-orm";
+import { db } from "@invoicely/db";
 
 /**
  * List all invoices for a user
  * @param userId - The ID of the user to list invoices for
  * @returns An array of invoices
  */
-export const listInvoicesQuery = async (userId: string) => {
+export const listInvoicesQuery = async () => {
   const invoices = await db.query.invoices.findMany({
-    where: eq(schema.invoices.userId, userId),
     with: {
       invoiceFields: {
         with: {

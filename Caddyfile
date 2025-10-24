@@ -1,11 +1,3 @@
 :80 {
-  redir https://{host}{uri}
-}
-
-:443 {
   reverse_proxy frontend:3000
-}
-
-analytics.example.com {
-  reverse_proxy posthog:8000
 }

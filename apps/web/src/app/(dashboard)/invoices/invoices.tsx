@@ -2,34 +2,25 @@
 
 import { Alert, AlertButtonGroup, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { columnConfig, columns } from "@/components/table-columns/invoices";
-import { getAllInvoices } from "@/lib/indexdb-queries/invoice";
 import { DataTable } from "@/components/ui/data-table";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { useSession } from "@/lib/client-auth";
 import { useTRPC } from "@/trpc/client";
 import React from "react";
 
 const InvoicesPage = () => {
   const trpc = useTRPC();
-  const { data: session } = useSession();
 
   // Fetching Invoices from the Postgres (Server)
   const trpcData = useQuery({
     ...trpc.invoice.list.queryOptions(),
-    enabled: !!session?.user, // Only fetch if user is logged in
+    enabled: true,
   });
 
-  // Fetching Invoices from the LocalDB
-  const idbData = useQuery({
-    queryKey: ["idb-invoices"],
-    queryFn: getAllInvoices,
-  });
-
-  const isLoading = trpcData.isLoading || idbData.isLoading;
+  const isLoading = trpcData.isLoading;
 
   // Combine and ensure data is an array
-  const data = [...(trpcData.data ?? []), ...(idbData.data ?? [])];
+  const data = trpcData.data ?? [];
 
   return (
     <div className="dash-page gap-4 p-4">

@@ -4,17 +4,15 @@ import { db, schema } from "@invoicely/db";
 import { v4 as uuidv4 } from "uuid";
 import Decimal from "decimal.js";
 
-export const insertInvoiceQuery = async (invoice: ZodCreateInvoiceSchema, userId: string, id?: string) => {
+export const insertInvoiceQuery = async (invoice: ZodCreateInvoiceSchema, id?: string) => {
   // Inserting invoice in db
   const [insertedInvoice] = await db
     .insert(schema.invoices)
     .values({
       id: id ?? uuidv4(),
-      type: "server",
       status: "pending",
       createdAt: new Date(),
       updatedAt: new Date(),
-      userId: userId,
     })
     .returning({
       id: schema.invoices.id,

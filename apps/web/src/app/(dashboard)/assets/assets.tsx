@@ -4,15 +4,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ImageSparkleIcon, SignatureIcon, TrashIcon } from "@/assets/icons";
 import { getImagesWithKey } from "@/lib/manage-assets/getImagesWithKey";
-import { deleteImageFromIDB } from "@/lib/indexdb-queries/deleteImage";
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@/constants/issues";
-import { getAllImages } from "@/lib/indexdb-queries/getAllImages";
 import EmptySection from "@/components/ui/icon-placeholder";
 import UploadSignatureAsset from "./upload-signature.asset";
 import UploadLogoAsset from "./upload-logo-asset";
 import { Button } from "@/components/ui/button";
-import { useSession } from "@/lib/client-auth";
-import { R2_PUBLIC_URL } from "@/constants";
+import { MINIO_PUBLIC_URL } from "@/constants";
 import { useTRPC } from "@/trpc/client";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -45,18 +42,11 @@ const typeOfImages: ImageType[] = [
 const AssetsPage = () => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { data: session } = useSession();
 
   //   Fetch images from server
   const images = useQuery({
     ...trpc.cloudflare.listImages.queryOptions(),
-    enabled: !!session?.user,
-  });
-
-  //   Fetch images from indexedDB
-  const imagesFromIndexedDB = useQuery({
-    queryKey: ["idb-images"],
-    queryFn: getAllImages,
+    enabled: true,
   });
 
   //   Delete image from server
@@ -69,24 +59,6 @@ const AssetsPage = () => {
 
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: trpc.cloudflare.listImages.queryKey() });
-    },
-    onError: (error) => {
-      toast.error(ERROR_MESSAGES.TOAST_DEFAULT_TITLE, {
-        description: error.message,
-      });
-    },
-  });
-
-  //   Delete image from indexedDB
-  const deleteImageFromIndexedDBMutation = useMutation({
-    mutationFn: (imageId: string) => deleteImageFromIDB(imageId),
-    onSuccess: () => {
-      toast.success(SUCCESS_MESSAGES.TOAST_DEFAULT_TITLE, {
-        description: SUCCESS_MESSAGES.IMAGE_DELETED,
-      });
-
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ["idb-images"] });
     },
     onError: (error) => {
       toast.error(ERROR_MESSAGES.TOAST_DEFAULT_TITLE, {
@@ -117,13 +89,8 @@ const AssetsPage = () => {
     );
   }
 
-  const handleDeleteImage = async (imageId: string, type: "server" | "local") => {
-    if (session?.user && type === "server") {
-      // Delete image from  server
-      deleteServerImageMutation.mutate({ key: imageId });
-    } else {
-      deleteImageFromIndexedDBMutation.mutate(imageId);
-    }
+  const handleDeleteImage = async (imageId: string) => {
+    deleteServerImageMutation.mutate({ key: imageId });
   };
 
   return (
@@ -142,79 +109,42 @@ const AssetsPage = () => {
               </div>
             </AccordionTrigger>
             <AccordionContent>
-              {session?.user &&
-                (getImagesWithKey(images.data?.images, type.key).length > 0 || session.user.allowedSavingData) && (
-                  <>
-                    <div>
-                      <div className="instrument-serif text-xl font-bold">Server {type.title}</div>
-                      <p className="text-muted-foreground text-xs">
-                        Manage the {type.key}s that are stored on the server.
-                      </p>
-                    </div>
-                    {/* List Images */}
-                    <div className="mt-2 grid grid-cols-2 gap-4 md:grid-cols-5">
-                      {type.key === "logo" && session.user.allowedSavingData && <UploadLogoAsset type="server" />}
-                      {type.key === "signature" && session.user.allowedSavingData && (
-                        <UploadSignatureAsset type="server" />
-                      )}
-                      {getImagesWithKey(images.data?.images, type.key).map((image) => (
-                        <div key={image} className="bg-border/30 relative rounded-md">
-                          <Button
-                            disabled={deleteServerImageMutation.isPending}
-                            variant="ghost"
-                            size="xs"
-                            className="absolute top-2 right-2 !px-0.5 text-red-500 hover:!bg-red-500 hover:!text-white"
-                            onClick={() => handleDeleteImage(image, "server")}
-                          >
-                            <TrashIcon />
-                          </Button>
-                          <Image
-                            src={`${R2_PUBLIC_URL}/${image}`}
-                            alt={image}
-                            width={200}
-                            height={200}
-                            className="aspect-square w-full rounded-md object-cover"
-                            unoptimized
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              <div>
-                <div className="instrument-serif text-xl font-bold">Local {type.title}</div>
-                <p className="text-muted-foreground text-xs">Manage the {type.key}s that are stored on your device.</p>
-              </div>
-              {/* List Images */}
-              <div className="mt-2 grid grid-cols-2 gap-4 md:grid-cols-5">
-                {type.key === "logo" && <UploadLogoAsset type="local" />}
-                {type.key === "signature" && <UploadSignatureAsset type="local" />}
-                {imagesFromIndexedDB.data?.map((image) => {
-                  if (image.type === type.key) {
-                    return (
-                      <div key={image.id} className="bg-border/30 relative rounded-md">
+              {getImagesWithKey(images.data?.images, type.key).length > 0 && (
+                <>
+                  <div>
+                    <div className="instrument-serif text-xl font-bold">Server {type.title}</div>
+                    <p className="text-muted-foreground text-xs">
+                      Manage the {type.key}s that are stored on the server.
+                    </p>
+                  </div>
+                  {/* List Images */}
+                  <div className="mt-2 grid grid-cols-2 gap-4 md:grid-cols-5">
+                    {type.key === "logo" && <UploadLogoAsset />}
+                    {type.key === "signature" && <UploadSignatureAsset />}
+                    {getImagesWithKey(images.data?.images, type.key).map((image) => (
+                      <div key={image} className="bg-border/30 relative rounded-md">
                         <Button
-                          disabled={deleteImageFromIndexedDBMutation.isPending}
+                          disabled={deleteServerImageMutation.isPending}
                           variant="ghost"
                           size="xs"
                           className="absolute top-2 right-2 !px-0.5 text-red-500 hover:!bg-red-500 hover:!text-white"
-                          onClick={() => handleDeleteImage(image.id, "local")}
+                          onClick={() => handleDeleteImage(image)}
                         >
                           <TrashIcon />
                         </Button>
                         <Image
-                          src={image.base64}
-                          alt={image.id}
+                          src={`${MINIO_PUBLIC_URL}/${image}`}
+                          alt={image}
                           width={200}
                           height={200}
                           className="aspect-square w-full rounded-md object-cover"
                           unoptimized
                         />
                       </div>
-                    );
-                  }
-                })}
-              </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </AccordionContent>
           </AccordionItem>
         ))}

@@ -5,7 +5,7 @@ import { InvoiceImageType } from "@/types/common/invoice";
 import { env } from "@invoicely/utilities";
 import { v4 as uuidv4 } from "uuid";
 
-export const uploadImage = async (s3: S3Client, base64: string, userId: string, imageType: InvoiceImageType) => {
+export const uploadImage = async (s3: S3Client, base64: string, imageType: InvoiceImageType) => {
   const imageBuffer = createBufferFromBase64(base64);
   const contentType = getImageMimeType(base64);
 
@@ -13,11 +13,11 @@ export const uploadImage = async (s3: S3Client, base64: string, userId: string, 
     return null;
   }
 
-  const imageKey = `${userId}/${imageType}-${uuidv4()}`;
+  const imageKey = `${imageType}-${uuidv4()}`;
 
   const imageUploadResult = await s3.send(
     new PutObjectCommand({
-      Bucket: env.CF_R2_BUCKET_NAME,
+      Bucket: env.MINIO_BUCKET_NAME,
       Key: imageKey,
       ContentType: contentType,
       Body: imageBuffer,
@@ -25,7 +25,7 @@ export const uploadImage = async (s3: S3Client, base64: string, userId: string, 
   );
 
   if (imageUploadResult.$metadata.httpStatusCode === 200) {
-    return `${env.CF_R2_PUBLIC_DOMAIN}/${imageKey}`;
+    return `${env.NEXT_PUBLIC_MINIO_PUBLIC_DOMAIN}/${imageKey}`;
   }
 
   return null;

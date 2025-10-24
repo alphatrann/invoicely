@@ -1,6 +1,6 @@
 import { ERROR_MESSAGES } from "@/constants/issues";
 import { db, schema } from "@invoicely/db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 /**
  * Delete an invoice for a user
@@ -9,10 +9,10 @@ import { and, eq } from "drizzle-orm";
  * @returns The ID of the deleted invoice
  * @throws Error if the invoice is not found or failed to delete
  */
-export const deleteInvoiceQuery = async (invoiceId: string, userId: string) => {
+export const deleteInvoiceQuery = async (invoiceId: string) => {
   // First, verify the invoice exists and belongs to the user
   const invoice = await db.query.invoices.findFirst({
-    where: and(eq(schema.invoices.id, invoiceId), eq(schema.invoices.userId, userId)),
+    where: eq(schema.invoices.id, invoiceId),
     columns: {
       id: true,
     },
@@ -26,12 +26,9 @@ export const deleteInvoiceQuery = async (invoiceId: string, userId: string) => {
   // Assuming direct deletion is allowed or handled by cascade settings in the DB.
   // If not, specific deletions for related tables (invoiceFields, etc.) would be needed here.
 
-  const [deletedInvoice] = await db
-    .delete(schema.invoices)
-    .where(and(eq(schema.invoices.id, invoiceId), eq(schema.invoices.userId, userId)))
-    .returning({
-      id: schema.invoices.id,
-    });
+  const [deletedInvoice] = await db.delete(schema.invoices).where(eq(schema.invoices.id, invoiceId)).returning({
+    id: schema.invoices.id,
+  });
 
   if (!deletedInvoice) {
     throw new Error(ERROR_MESSAGES.FAILED_TO_DELETE_INVOICE);

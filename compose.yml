@@ -14,20 +14,50 @@ services:
     networks:
       - app_network
 
+  minio:
+    image: minio/minio
+    container_name: minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Admin console
+    volumes:
+      - minio_data:/data
+    networks:
+      - app_network
+
+  minio-setup:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+        sleep 5 &&
+        mc alias set local http://minio:9000 minio minio123 &&
+        mc mb -p local/invoicely || true &&
+        mc anonymous set download local/invoicely
+      "
+    networks:
+      - app_network
+
   frontend:
     build:
       context: .
     container_name: frontend
     command: sh -c "yarn db:generate && yarn db:migrate && yarn start"
-    restart: always
     env_file:
       - .env
-    depends_on:
-      - postgres
     networks:
       - app_network
+    depends_on:
+      - postgres
     expose:
       - "3000"
+    restart: always
 
   caddy:
     image: caddy:2
@@ -45,63 +75,11 @@ services:
     networks:
       - app_network
 
-  posthog:
-    image: posthog/posthog:latest
-    container_name: posthog
-    restart: always
-    depends_on:
-      - posthog-db
-      - posthog-redis
-    env_file:
-      - posthog.env
-    ports:
-      - "8000:8000"
-    volumes:
-      - posthog_data:/app/data
-    networks:
-      - app_network
-
-  posthog-db:
-    image: postgres:16
-    container_name: posthog-db
-    restart: always
-    env_file:
-      - posthog.env
-    volumes:
-      - posthog_db_data:/var/lib/postgresql/data
-    networks:
-      - app_network
-
-  posthog-redis:
-    image: redis:7-alpine
-    container_name: posthog-redis
-    restart: always
-    volumes:
-      - posthog_redis_data:/data
-    networks:
-      - app_network
-
-  posthog-clickhouse:
-    image: clickhouse/clickhouse-server:latest
-    container_name: posthog-clickhouse
-    restart: always
-    ulimits:
-      nofile:
-        soft: 262144
-        hard: 262144
-    volumes:
-      - posthog_clickhouse_data:/var/lib/clickhouse
-    networks:
-      - app_network
-
 volumes:
   postgres_data:
+  minio_data:
   caddy_data:
   caddy_config:
-  posthog_data:
-  posthog_db_data:
-  posthog_redis_data:
-  posthog_clickhouse_data:
 
 networks:
   app_network:

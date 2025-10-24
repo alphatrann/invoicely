@@ -12,7 +12,6 @@ const Page = async ({ params }: PageProps) => {
 
   //   safe parsing
   const parsedParams = EditInvoicePageSchema.safeParse({
-    type: awaitedParams.type,
     id: awaitedParams.id,
   });
 
@@ -20,9 +19,9 @@ const Page = async ({ params }: PageProps) => {
     throw new Error(ERROR_MESSAGES.INVALID_SEARCH_PARAMS);
   }
 
-  const { type, id } = parsedParams.data;
+  const { id } = parsedParams.data;
 
-  return <EditInvoice type={type} id={id} />;
+  return <EditInvoice id={id as string} />;
 };
 
 export default Page;

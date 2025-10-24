@@ -1,11 +1,16 @@
-import { ForbiddenError, PayloadTooLargeError, R2StorageError, ServiceUnavailableError } from "@/lib/effect/error/trpc";
+import {
+  ForbiddenError,
+  PayloadTooLargeError,
+  MinIOStorageError,
+  ServiceUnavailableError,
+} from "@/lib/effect/error/trpc";
 import { getFileSizeFromBase64 } from "@/lib/invoice/get-file-size-from-base64";
 import { getUserImagesCount } from "@/lib/cloudflare/r2/getUserImagesCount";
-import { authorizedProcedure } from "@/trpc/procedures/authorizedProcedure";
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@/constants/issues";
 import { awsS3Middleware } from "@/trpc/middlewares/awsS3Middleware";
 import { parseCatchError } from "@/lib/neverthrow/parseCatchError";
 import { uploadImage } from "@/lib/cloudflare/r2/uploadImage";
+import { baseProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { Effect } from "effect";
 import { z } from "zod";
@@ -15,7 +20,7 @@ const fileSizes = {
   signature: 150000, // 150kb
 };
 
-export const uploadImageFile = authorizedProcedure
+export const uploadImageFile = baseProcedure
   .use(awsS3Middleware)
   .input(
     z.object({
@@ -23,20 +28,12 @@ export const uploadImageFile = authorizedProcedure
       base64: z.string(),
     }),
   )
-  .mutation(async ({ ctx, input }) => {
-    const userId = ctx.auth.user.id;
-
+  .mutation(async ({ input, ctx }) => {
     // Upload Image Effect
     const uploadImageEffect = Effect.gen(function* () {
-      // Check if the user is allowed to save data
-      if (!ctx.auth.user.allowedSavingData) {
-        return yield* new ForbiddenError({ message: ERROR_MESSAGES.NOT_ALLOWED_TO_SAVE_DATA });
-      }
-
-      // Getting the number of images the user has uploaded
       const userImagesCount = yield* Effect.tryPromise({
-        try: () => getUserImagesCount(ctx.s3, userId),
-        catch: (error) => new R2StorageError({ message: parseCatchError(error) }),
+        try: () => getUserImagesCount(ctx.s3),
+        catch: (error) => new MinIOStorageError({ message: parseCatchError(error) }),
       });
 
       // Check if the user has reached the maximum number of images
@@ -57,10 +54,10 @@ export const uploadImageFile = authorizedProcedure
         });
       }
 
-      // Upload the image to Cloudflare R2
+      // Upload the image to Cloudflare MinIO
       const image = yield* Effect.tryPromise({
-        try: () => uploadImage(ctx.s3, input.base64, userId, input.type),
-        catch: (error) => new R2StorageError({ message: parseCatchError(error) }),
+        try: () => uploadImage(ctx.s3, input.base64, input.type),
+        catch: (error) => new MinIOStorageError({ message: parseCatchError(error) }),
       });
 
       // Check if the image was uploaded successfully
@@ -80,16 +77,13 @@ export const uploadImageFile = authorizedProcedure
     return Effect.runPromise(
       uploadImageEffect.pipe(
         Effect.catchTags({
-          // If the user is not allowed to save data, return a forbidden error
-          ForbiddenError: (error) => Effect.fail(new TRPCError({ code: "FORBIDDEN", message: error.message })),
-          // If the image is too large, return a payload too large error
           PayloadTooLargeError: (error) =>
             Effect.fail(new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: error.message })),
           // If the image was not uploaded successfully, return a service unavailable error
           ServiceUnavailableError: (error) =>
             Effect.fail(new TRPCError({ code: "SERVICE_UNAVAILABLE", message: error.message })),
           // If the image was not uploaded successfully, return a service unavailable error
-          R2StorageError: (error) =>
+          MinIOStorageError: (error) =>
             Effect.fail(new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message })),
         }),
       ),

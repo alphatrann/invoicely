@@ -1,9 +1,11 @@
 node_modules
 .git
+.next
+.content-collections
+.cache
 .gitignore
 Dockerfile
-docker-compose.yml
-.env
+compose.yml
 *.log
 .turbo
 .husky
