@@ -6,7 +6,10 @@
 
 > [!CAUTION]
 > This project has been greatly simplifed from the original repository for local use. Authentication is omitted, databases and file storage run locally in Docker containers.
-> The original repository is available [here](https://github.com/legions-developer/invoicely).
+
+This is a forked version of [invoicely.gg](https://invoicely.gg), an app that helps craft beautiful invoices. However, the tech stack only consists of open-source technologies. Authentication has been removed for personal use.
+
+The original repository is available [here](https://github.com/legions-developer/invoicely).
 
 ## 🚀 Quick Start
 
@@ -40,6 +43,9 @@
 2. **Set up environment variables**
 
    ```bash
+   # Copy environment variables
+   cp .env.example .env
+
    # Create symlinks for environment variables across apps
    yarn sys-link
    ```
@@ -60,6 +66,11 @@
    ```
 
 #### Production
+Copy environment variables
+   ```bash
+   cp .env.example .env
+   ```
+
 Simply run:
 ```bash
 docker compose up -d
@@ -94,11 +105,11 @@ This will automatically build images and spin up containers: storage (MinIO), da
 ### Database
 
 - **Drizzle ORM 0.43.1** - Type-safe database ORM
-- **PostgreSQL**
+- **PostgreSQL 16**
 
 ### File Storage & PDF
 
-- **Cloudflare R2** - Object storage
+- **MinIO** - Object storage
 - **React PDF 9.2.1** - PDF generation
 
 ### Development Tools
@@ -151,11 +162,11 @@ invoicely
 │         ├──trpc
 │         ├──types
 │         └──zod-schemas
-└──packages
-   ├──db
-   ├──eslint-config
-   ├──typescript-config
-   └──utilities
+└───packages
+    ├──db
+    ├──eslint-config
+    ├──typescript-config
+    └──utilities
 ```
 
 
